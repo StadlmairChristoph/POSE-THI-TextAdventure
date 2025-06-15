@@ -179,6 +179,7 @@ show_combat_actions :-
     write('COMBAT: attack, hack'), nl.
 show_combat_actions.
 
+
 process_action(north) :- move(north).
 process_action(south) :- move(south).
 process_action(east) :- move(east).
@@ -267,6 +268,32 @@ attack_enemy(Location, TargetId) :-
 attack_enemy(_, TargetId) :-
     write('Invalid target: '), write(TargetId), nl.
 
+combat_hack :-
+    player_location(Location),
+    \+ has_enemies(Location),
+    write('No systems to hack.'), nl,
+    !.
+combat_hack :-
+    player_location(Location),
+    write('Select target to hack: '), nl,
+    list_enemies(Location),
+    write('Enter enemy ID: '),
+    read(TargetId),
+    hack_enemy(Location, TargetId).
+
+hack_enemy(Location, TargetId) :-
+    room_enemy(Location, TargetId, EnemyType, _),
+    enemy_type(EnemyType, EnemyName, _, _, _),
+    random_hack_roll(Roll),
+    write('Attempting to hack '), write(EnemyName), write(' ('), write(TargetId), write(')...'), nl,
+    (   Roll >= 7 ->
+        write('Hack successful! You disable the '), write(EnemyName), write('!'), nl,
+        defeat_enemy(Location, TargetId, EnemyType)
+    ;   write('Hack failed! (Rolled '), write(Roll), write('/10)'), nl,
+        all_enemies_counterattack(Location)
+    ).
+hack_enemy(_, TargetId) :-
+    write('Invalid target: '), write(TargetId), nl.
 
 all_enemies_counterattack(Location) :-
     findall(EnemyType, room_enemy(Location, _, EnemyType, _), EnemyTypes),
@@ -300,3 +327,6 @@ defeat_enemy(Location, EnemyId, EnemyType) :-
         write('Area secured!'), nl
     ;   true
     ).
+
+random_hack_roll(Result) :-
+    random(1, 11, Result).
