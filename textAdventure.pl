@@ -9,7 +9,7 @@
 
 init_game :-
     set_seed(12345),
-	randomize,
+    randomize,
     retractall(player_location(_)),
     retractall(player_health(_)),
     retractall(player_money(_)),
@@ -25,6 +25,8 @@ init_game :-
     asserta(player_armor(light_jacket)),
     asserta(ghost_saved(false)),
     asserta(game_won(false)).
+
+
 
 room(entrance, 'Zenith Corporation - Main Entrance', 
      'Neon lights flicker across the corporate plaza. Security drones patrol overhead.').
@@ -54,10 +56,10 @@ armor(kevlar_vest, 'Kevlar Vest', 15, 600).
 armor(cyber_armor, 'Cyber Armor', 25, 1000).
 armor(stealth_suit, 'Stealth Suit', 20, 1200).
 
-%(name, health, damage, reward)
-enemy(security_drone, 'Security Drone', 30, 12, 100).
-enemy(attack_drone, 'Attack Drone', 50, 20, 150).
-enemy(aegis_9, 'Aegis-9 AI Core', 200, 40, 2000).
+%(type, name, max_health, damage, reward)
+enemy_type(security_drone, 'Security Drone', 30, 12, 100).
+enemy_type(attack_drone, 'Attack Drone', 50, 20, 150).
+enemy_type(aegis_9, 'Aegis-9 AI Core', 200, 40, 2000).
 
 %(current_room, direction, connected_room)
 connected(entrance, north, lobby).
@@ -74,3 +76,35 @@ connected(ghost_trap, south, security_hub).
 connected(ghost_trap, north, data_core).
 connected(data_core, south, server_room).
 
+start_game :-
+    init_game,
+    write('========================================='), nl,
+    write('    NEON SHADOW: INFILTRATION PROTOCOL'), nl,
+    write('========================================='), nl,
+    write('Neo-Tokyo Prime, 2093'), nl,
+    write('The neon-soaked streets buzz with corporate oppression.'), nl,
+    write('You are ONI, elite netrunner on a mission to infiltrate'), nl,
+    write('Zenith Corporation and shut down their surveillance grid.'), nl,
+    write('========================================='), nl, nl,
+    display_status,
+    look_around,
+    
+
+display_status :-
+    player_health(Health),
+    player_money(Money),
+    player_weapon(WeaponCode),
+    player_armor(ArmorCode),
+    weapon(WeaponCode, WeaponName, _, _),
+    armor(ArmorCode, ArmorName, _, _),
+    write('STATUS: Health: '), write(Health),
+    write(' | Money: '), write(Money), write(' credits'),
+    write(' | Weapon: '), write(WeaponName),
+    write(' | Armor: '), write(ArmorName), nl.
+
+look_around :-
+    player_location(Location),
+    room(Location, Name, Description),
+    write('LOCATION: '), write(Name), nl,
+    write(Description), nl,
+    
