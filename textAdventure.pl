@@ -78,7 +78,7 @@ weapon(ion_cannon, 'Ion Cannon', 60, 1500).
 armor(light_jacket, 'Light Jacket', 5, 0).
 armor(kevlar_vest, 'Kevlar Vest', 15, 600).
 armor(cyber_armor, 'Cyber Armor', 25, 1000).
-armor(stealth_suit, 'Stealth Suit', 20, 1200).
+armor(stealth_suit, 'Stealth Suit', 20, 800).
 
 %(type, name, max_health, damage, reward)
 enemy_type(security_drone, 'Security Drone', 30, 12, 100).
@@ -233,6 +233,7 @@ list_enemies(Room) :-
             write('- '), write(EnemyName), write(' ('), write(EnemyId), 
             write(', Health: '), write(Health), write(')'), nl)).
 
+
 combat_attack :-
     player_location(Location),
     \+ has_enemies(Location),
@@ -266,6 +267,25 @@ attack_enemy(Location, TargetId) :-
 attack_enemy(_, TargetId) :-
     write('Invalid target: '), write(TargetId), nl.
 
+
+all_enemies_counterattack(Location) :-
+    findall(EnemyType, room_enemy(Location, _, EnemyType, _), EnemyTypes),
+    counterattack_sequence(EnemyTypes).
+
+counterattack_sequence([]).
+counterattack_sequence([EnemyType|Rest]) :-
+    enemy_type(EnemyType, EnemyName, _, Damage, _),
+    write('The '), write(EnemyName), write(' retaliates!'), nl,
+    player_armor(ArmorCode),
+    armor(ArmorCode, _, Protection, _),
+    ActualDamage is max(1, Damage - Protection),
+    player_health(CurrentHealth),
+    NewHealth is CurrentHealth - ActualDamage,
+    retract(player_health(CurrentHealth)),
+    asserta(player_health(NewHealth)),
+    write('You take '), write(ActualDamage), write(' damage!'), nl,
+    counterattack_sequence(Rest).
+
 defeat_enemy(Location, EnemyId, EnemyType) :-
     enemy_type(EnemyType, EnemyName, _, _, Reward),
     retract(room_enemy(Location, EnemyId, EnemyType, _)),
@@ -276,9 +296,7 @@ defeat_enemy(Location, EnemyId, EnemyType) :-
     write(EnemyName), write(' ('), write(EnemyId), write(') destroyed! '),
     write('You earned '), write(Reward), write(' credits.'), nl,
     
-    % Check if room is now clear
     (   \+ has_enemies(Location) ->
         write('Area secured!'), nl
     ;   true
     ).
-
