@@ -19,3 +19,15 @@ One wrong move, and you’ll be another erased name in the digital void.
 ### **Team Members:**  
 - Christoph Stadlmair
 - Florian Krippel
+
+---------------------------------------------------------------------
+### INstructions
+Commands:
+- status. (Displays your health, and money)
+- attack. (Attack enemy with your weapon (base damage = 15); you must choose the enemey (id = number from 1-9))
+- hack. (Deals no damage but has a 40% chance to kill the enemy instantly)
+- north., south., west., east. (Directions to move in the (...) are the locations where to move)
+- buy_weapon. (buy weapon from shop (only works in the shop), press anything (a. or b.) to exit)
+- buy_armor. (buy armor from shop (only works in the shop), press anything (x. or y.) to exit)
+- save_ghost. (In the room ghost_trap. ghost is guarded by drones after defeating those drones you can save ghost and ghost restores you to full (100hp) health)
+- shutdown_core. (In the data_core room there is aegis_9, which has to be brought down to at least 150hp and then hacked 3 times in order to be defeated; then there is an action to shutdown the core, to win the game)
