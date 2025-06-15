@@ -186,6 +186,10 @@ show_special_actions :-
     player_location(ghost_trap),
     ghost_saved(false),
     write('RESCUE: save_ghost'), nl.
+show_special_actions :-
+    player_location(data_core),
+    \+ has_enemies(data_core),
+    write('MISSION: shutdown_core'), nl.
 show_special_actions.
 
 process_action(north) :- move(north).
@@ -197,6 +201,7 @@ process_action(hack) :- combat_hack.
 process_action(buy_weapon) :- shop_buy_weapon.
 process_action(buy_armor) :- shop_buy_armor.
 process_action(save_ghost) :- rescue_ghost.
+process_action(shutdown_core) :- shutdown_data_core.
 process_action(status) :- display_status.
 process_action(quit) :- 
     write('Thanks for playing NEON SHADOW!'), nl,
@@ -258,6 +263,9 @@ check_special_room(ghost_trap) :-
 check_special_room(ghost_trap) :-
     ghost_saved(true),
     write('This detention block is now empty.'), nl.
+check_special_room(data_core) :-
+    \+ has_enemies(data_core),
+    write('The data core hums with vulnerable energy. Time to shut it down!'), nl.
 check_special_room(_).
 
 combat_attack :-
@@ -440,6 +448,21 @@ rescue_ghost :-
 rescue_ghost :-
     write('Ghost is not here.'), nl.
 
+shutdown_data_core :-
+    player_location(data_core),
+    \+ has_enemies(data_core),
+    write('You access the main terminal and begin the shutdown sequence...'), nl,
+    write('AEGIS-9: "IMPOSSIBLE... SYSTEMS... FAILING..."'), nl,
+    write('The data core goes dark. Corporate surveillance grid OFFLINE!'), nl,
+    write('Neon lights flicker across the city as freedom returns to Neo-Tokyo Prime!'), nl,
+    asserta(game_won(true)),
+    !.
+shutdown_data_core :-
+    player_location(data_core),
+    write('You must defeat Aegis-9 first!'), nl,
+    !.
+shutdown_data_core :-
+    write('You are not at the data core.'), nl.
 
 random_hack_roll(Result) :-
     random(1, 11, Result).
