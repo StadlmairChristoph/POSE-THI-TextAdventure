@@ -6,7 +6,7 @@
 :- dynamic(ghost_saved/1).
 :- dynamic(room_cleared/1).
 :- dynamic(game_won/1).
-:- dynamic(room_enemy/4).  % room_enemy(RoomId, EnemyId, EnemyType, CurrentHealth)
+:- dynamic(room_enemy/4).
 
 init_game :-
     set_seed(12345),
@@ -27,7 +27,30 @@ init_game :-
     asserta(player_armor(light_jacket)),
     asserta(ghost_saved(false)),
     asserta(game_won(false)),
+    spawn_initial_enemies.
 
+spawn_initial_enemies :-
+    % Entrance: 2 security drones
+    asserta(room_enemy(entrance, 1, security_drone, 30)),
+    asserta(room_enemy(entrance, 2, security_drone, 30)),
+    
+    % Lobby: 1 security drone
+    asserta(room_enemy(lobby, 3, security_drone, 30)),
+    
+    % Security Hub: 1 attack drone
+    asserta(room_enemy(security_hub, 4, attack_drone, 50)),
+    
+    % Server Room: 2 security drones
+    asserta(room_enemy(server_room, 5, security_drone, 30)),
+    asserta(room_enemy(server_room, enemy_6, security_drone, 30)),
+    
+    % Ghost Trap: 3 attack drones
+    asserta(room_enemy(ghost_trap, 7, attack_drone, 50)),
+    asserta(room_enemy(ghost_trap, 8, attack_drone, 50)),
+    asserta(room_enemy(ghost_trap, 9, attack_drone, 50)),
+    
+    % Data Core: 1 Aegis-9
+    asserta(room_enemy(data_core, 10, aegis_9, 200)).
 
 room(entrance, 'Zenith Corporation - Main Entrance', 
      'Neon lights flicker across the corporate plaza. Security drones patrol overhead.').
@@ -127,7 +150,7 @@ look_around :-
     player_location(Location),
     room(Location, Name, Description),
     write('LOCATION: '), write(Name), nl,
-    write(Description), nl.
+    write(Description).
 
 show_actions :-
     write('ACTIONS:'), nl,
@@ -147,6 +170,7 @@ show_directions([]).
 show_directions([Dir|Rest]) :-
     write(Dir), write(' '),
     show_directions(Rest).
+
 
 process_action(north) :- move(north).
 process_action(south) :- move(south).
