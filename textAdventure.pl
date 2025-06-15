@@ -7,6 +7,7 @@
 :- dynamic(room_cleared/1).
 :- dynamic(game_won/1).
 :- dynamic(room_enemy/4).
+:- dynamic(aegis_hack_count/1).
 
 init_game :-
     set_seed(23456),
@@ -20,6 +21,7 @@ init_game :-
     retractall(room_cleared(_)),
     retractall(game_won(_)),
     retractall(room_enemy(_, _, _, _)),
+    retractall(aegis_hack_count(_)),
     asserta(player_location(entrance)),
     asserta(player_health(100)),
     asserta(player_money(500)),
@@ -27,6 +29,7 @@ init_game :-
     asserta(player_armor(light_jacket)),
     asserta(ghost_saved(false)),
     asserta(game_won(false)),
+    asserta(aegis_hack_count(0)),
     spawn_initial_enemies.
 
 spawn_initial_enemies :-
@@ -40,13 +43,13 @@ spawn_initial_enemies :-
     % Security Hub: 1 attack drone
     asserta(room_enemy(security_hub, 4, attack_drone, 50)),
     
-    % Server Room: 2 security drones
+    % Server Room: 1 security drone, 1 attack drone
     asserta(room_enemy(server_room, 5, security_drone, 30)),
-	asserta(room_enemy(server_room, 6, security_drone, 30)),
+	asserta(room_enemy(server_room, 6, attack_drone, 45)),
     
-    % Ghost Trap: 3 attack drones
-    asserta(room_enemy(ghost_trap, 7, attack_drone, 50)),
-    asserta(room_enemy(ghost_trap, 8, attack_drone, 50)),
+    % Ghost Trap: 2 attack drones
+    asserta(room_enemy(ghost_trap, 7, attack_drone, 45)),
+    asserta(room_enemy(ghost_trap, 8, attack_drone, 45)),
     
     % Data Core: 1 Aegis-9
     asserta(room_enemy(data_core, 9, aegis_9, 200)).
@@ -81,8 +84,8 @@ armor(cyber_armor, 'Cyber Armor', 25, 1000).
 
 %(type, name, max_health, damage, reward)
 enemy_type(security_drone, 'Security Drone', 30, 12, 150).
-enemy_type(attack_drone, 'Attack Drone', 40, 25, 200).
-enemy_type(aegis_9, 'Aegis-9 AI Core', 200, 40, 2000).
+enemy_type(attack_drone, 'Attack Drone', 45, 28, 200).
+enemy_type(aegis_9, 'Aegis-9 AI Core', 200, 35, 2000).
 
 %(current_room, direction, connected_room)
 connected(entrance, north, lobby).
@@ -252,7 +255,12 @@ list_enemies(Room) :-
     forall(room_enemy(Room, EnemyId, EnemyType, Health),
            (enemy_type(EnemyType, EnemyName, _, _, _),
             write('- '), write(EnemyName), write(' ('), write(EnemyId), 
-            write(', Health: '), write(Health), write(')'), nl)).
+            write(', Health: '), write(Health), write(')'), nl,
+            (EnemyType = aegis_9, Health =< 150 ->
+                aegis_hack_count(HackCount),
+                write('  [Aegis-9 weakened! Hack attempts: '), 
+                write(HackCount), write('/3]'), nl
+            ; true))).
 
 check_special_room(nova_shop) :-
     write('Nova grins behind her cybernetic visor: "Need some hardware, choom?"'), nl.
@@ -293,15 +301,37 @@ attack_enemy(Location, TargetId) :-
     write('You attack '), write(EnemyName), write(' ('), write(TargetId), 
     write(') with '), write(WeaponName), write('!'), nl,
     NewHealth is CurrentHealth - WeaponDamage,
-    (   NewHealth =< 0 ->
+    (   NewHealth =< 0, EnemyType \= aegis_9 ->
         defeat_enemy(Location, TargetId, EnemyType)
+    ;   NewHealth =< 0, EnemyType = aegis_9 ->
+        % Aegis-9 cannot die without hacks
+        retract(room_enemy(Location, TargetId, EnemyType, CurrentHealth)),
+        asserta(room_enemy(Location, TargetId, EnemyType, 1)),
+        write('The '), write(EnemyName), write(' is critically damaged but still functional!'), nl,
+        write('AEGIS-9: "ARMOR COMPROMISED... SWITCHING TO EMERGENCY PROTOCOLS..."'), nl,
+        write('You must hack the weakened system to defeat it!'), nl,
+        all_enemies_counterattack(Location)
+    ;   NewHealth =< 150, EnemyType = aegis_9 ->
+        % Aegis-9 is below 150hp and can now be hacked
+        retract(room_enemy(Location, TargetId, EnemyType, CurrentHealth)),
+        asserta(room_enemy(Location, TargetId, EnemyType, NewHealth)),
+        write('The '), write(EnemyName), write(' takes '), write(WeaponDamage), 
+        write(' damage! (Health: '), write(NewHealth), write(')'), nl,
+        write('AEGIS-9: "CORE SYSTEMS COMPROMISED... FIREWALL WEAKENING..."'), nl,
+        write('Aegis-9 is now vulnerable to hacking attacks!'), nl,
+        all_enemies_counterattack(Location),
+        retract(room_enemy(Location, TargetId, EnemyType, CurrentHealth)),
+        asserta(room_enemy(Location, TargetId, EnemyType, NewHealth)),
+        write('The '), write(EnemyName), write(' takes '), write(WeaponDamage), 
+        write(' damage! (Health: '), write(NewHealth), write(')'), nl,
+        all_enemies_counterattack(Location)
     ;   % Update enemy health
         retract(room_enemy(Location, TargetId, EnemyType, CurrentHealth)),
         asserta(room_enemy(Location, TargetId, EnemyType, NewHealth)),
         write('The '), write(EnemyName), write(' takes '), write(WeaponDamage), 
         write(' damage! (Health: '), write(NewHealth), write(')'), nl,
         all_enemies_counterattack(Location)
-    ).
+	).
 attack_enemy(_, TargetId) :-
     write('Invalid target: '), write(TargetId), nl.
 
@@ -319,7 +349,40 @@ combat_hack :-
     hack_enemy(Location, TargetId).
 
 hack_enemy(Location, TargetId) :-
+    room_enemy(Location, TargetId, aegis_9, Health),
+    Health > 150,
+    write('Aegis-9\'s defenses are too strong! You must weaken it with attacks first!'), nl,
+    write('AEGIS-9: "PATHETIC INTRUSION ATTEMPT DETECTED AND BLOCKED."'), nl,
+    all_enemies_counterattack(Location),
+    !.
+hack_enemy(Location, TargetId) :-
+    room_enemy(Location, TargetId, aegis_9, Health),
+    Health =< 150,
+    aegis_hack_count(CurrentCount),
+    enemy_type(aegis_9, EnemyName, _, _, _),
+    random_hack_roll(Roll),
+    NewCount is CurrentCount + 1,
+    retract(aegis_hack_count(CurrentCount)),
+    asserta(aegis_hack_count(NewCount)),
+    write('Attempting to hack '), write(EnemyName), write(' ('), write(TargetId), write(')...'), nl,
+    write('Hack attempt '), write(NewCount), write('/3'), nl,
+    (   Roll >= 6 ->
+        write('Hack successful! You penetrate Aegis-9\'s weakened defenses!'), nl
+    ;   write('Hack failed! (Rolled '), write(Roll), write('/10) But you\'re wearing down its defenses!'), nl
+    ),
+    (   NewCount >= 3 ->
+        write('CRITICAL SYSTEM BREACH! Aegis-9\'s core protocols are collapsing!'), nl,
+        write('AEGIS-9: "IMPOSSIBLE... TOTAL SYSTEM FAILURE... EMERGENCY SHUTDOWN..."'), nl,
+        defeat_enemy(Location, TargetId, aegis_9)
+    ;   write('AEGIS-9: "FIREWALL INTEGRITY AT '), 
+        Remaining is 3 - NewCount,
+        write(Remaining), write(' PERCENT... DEPLOYING COUNTERMEASURES..."'), nl,
+        all_enemies_counterattack(Location)
+    ),
+    !.
+hack_enemy(Location, TargetId) :-
     room_enemy(Location, TargetId, EnemyType, _),
+    EnemyType \= aegis_9,
     enemy_type(EnemyType, EnemyName, _, _, _),
     random_hack_roll(Roll),
     write('Attempting to hack '), write(EnemyName), write(' ('), write(TargetId), write(')...'), nl,
@@ -342,7 +405,8 @@ counterattack_sequence([EnemyType|Rest]) :-
     write('The '), write(EnemyName), write(' retaliates!'), nl,
     player_armor(ArmorCode),
     armor(ArmorCode, _, Protection, _),
-    ActualDamage is max(1, Damage - Protection),
+	aegis_hack_count(CurrentCount),
+    ActualDamage is max(3, Damage - Protection - 5 * CurrentCount),
     player_health(CurrentHealth),
     NewHealth is CurrentHealth - ActualDamage,
     retract(player_health(CurrentHealth)),
@@ -359,6 +423,11 @@ defeat_enemy(Location, EnemyId, EnemyType) :-
     asserta(player_money(NewMoney)),
     write(EnemyName), write(' ('), write(EnemyId), write(') destroyed! '),
     write('You earned '), write(Reward), write(' credits.'), nl,
+    
+    (   EnemyType = aegis_9 ->
+        write('The mighty Aegis-9 AI Core finally falls! Corporate defenses are down!'), nl
+    ;   true
+    ),
     
     (   \+ has_enemies(Location) ->
         write('Area secured!'), nl
