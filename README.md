@@ -20,7 +20,7 @@ One wrong move, and you’ll be another erased name in the digital void.
 - Christoph Stadlmair
 - Florian Krippel
 
----------------------------------------------------------------------
+---
 ### INstructions
 Commands:
 - status. (Displays your health, and money)
@@ -33,4 +33,6 @@ Commands:
 - shutdown_core. (In the data_core room there is aegis_9, which has to be brought down to at least 150hp and then hacked 3 times in order to be defeated; then there is an action to shutdown the core, to win the game)
 
 ---
-###
+### P.S.
+
+Der meiste Code wurde in den Supplierstunden gemeinsam geschrieben oder mit onedrive filshire geteilt. Den Code haben wir jetzt im github repo nochmal in die commits aufgeteilt, um besser zu sehen welcher Codeabschnitt was erledigt.
