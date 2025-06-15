@@ -150,7 +150,8 @@ look_around :-
     player_location(Location),
     room(Location, Name, Description),
     write('LOCATION: '), write(Name), nl,
-    write(Description).
+    write(Description), nl,
+    check_enemies(Location).
 
 show_actions :-
     write('ACTIONS:'), nl,
@@ -171,7 +172,6 @@ show_directions([Dir|Rest]) :-
     write(Dir), write(' '),
     show_directions(Rest).
 
-
 process_action(north) :- move(north).
 process_action(south) :- move(south).
 process_action(east) :- move(east).
@@ -186,6 +186,12 @@ process_action(_) :-
 move(Direction) :-
     player_location(Current),
     connected(Current, Direction, Destination),
+    has_enemies(Current),
+    write('You cannot leave while enemies are present!'), nl,
+    !.
+move(Direction) :-
+    player_location(Current),
+    connected(Current, Direction, Destination),
     retract(player_location(Current)),
     asserta(player_location(Destination)),
     write('You move '), write(Direction), write('.'), nl,
@@ -193,4 +199,22 @@ move(Direction) :-
     !.
 move(_) :-
     write('You cannot go that way.'), nl.
+
+has_enemies(Room) :-
+    room_enemy(Room, _, _, _), !.
+
+count_enemies(Room, Count) :-
+    findall(Enemy, room_enemy(Room, Enemy, _, _), Enemies),
+    length(Enemies, Count).
+
+check_enemies(Location) :-
+    count_enemies(Location, Count),
+    Count > 0,
+    write('THREAT DETECTED: '), write(Count), 
+    (Count =:= 1 -> write(' enemy') ; write(' enemies')),
+    write(' in this area!'), nl,
+    list_enemies(Location),
+    !.
+check_enemies(_) :-
+    write('Area secure - no enemies detected.'), nl.
 
