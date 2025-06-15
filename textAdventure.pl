@@ -179,7 +179,6 @@ show_combat_actions :-
     write('COMBAT: attack, hack'), nl.
 show_combat_actions.
 
-
 process_action(north) :- move(north).
 process_action(south) :- move(south).
 process_action(east) :- move(east).
@@ -226,8 +225,46 @@ check_enemies(Location) :-
     list_enemies(Location),
     !.
 check_enemies(_) :-
-    write('Area secure - no hostiles detected.'), nl.
+    write('Area secure - no enemies detected.'), nl.
 
+list_enemies(Room) :-
+    forall(room_enemy(Room, EnemyId, EnemyType, Health),
+           (enemy_type(EnemyType, EnemyName, _, _, _),
+            write('- '), write(EnemyName), write(' ('), write(EnemyId), 
+            write(', Health: '), write(Health), write(')'), nl)).
+
+combat_attack :-
+    player_location(Location),
+    \+ has_enemies(Location),
+    write('No enemies to attack.'), nl,
+    !.
+combat_attack :-
+    player_location(Location),
+    write('Select target: '), nl,
+    list_enemies(Location),
+    write('Enter enemy ID: '),
+    read(TargetId),
+    attack_enemy(Location, TargetId).
+
+attack_enemy(Location, TargetId) :-
+    room_enemy(Location, TargetId, EnemyType, CurrentHealth),
+    enemy_type(EnemyType, EnemyName, _, _, _),
+    player_weapon(WeaponCode),
+    weapon(WeaponCode, WeaponName, WeaponDamage, _),
+    write('You attack '), write(EnemyName), write(' ('), write(TargetId), 
+    write(') with '), write(WeaponName), write('!'), nl,
+    NewHealth is CurrentHealth - WeaponDamage,
+    (   NewHealth =< 0 ->
+        defeat_enemy(Location, TargetId, EnemyType)
+    ;   % Update enemy health
+        retract(room_enemy(Location, TargetId, EnemyType, CurrentHealth)),
+        asserta(room_enemy(Location, TargetId, EnemyType, NewHealth)),
+        write('The '), write(EnemyName), write(' takes '), write(WeaponDamage), 
+        write(' damage! (Health: '), write(NewHealth), write(')'), nl,
+        all_enemies_counterattack(Location)
+    ).
+attack_enemy(_, TargetId) :-
+    write('Invalid target: '), write(TargetId), nl.
 
 defeat_enemy(Location, EnemyId, EnemyType) :-
     enemy_type(EnemyType, EnemyName, _, _, Reward),
@@ -244,3 +281,4 @@ defeat_enemy(Location, EnemyId, EnemyType) :-
         write('Area secured!'), nl
     ;   true
     ).
+
