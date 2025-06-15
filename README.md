@@ -23,6 +23,7 @@ One wrong move, and you’ll be another erased name in the digital void.
 ---
 ### INstructions
 Commands:
+- start_game. (Starts the game)
 - status. (Displays your health, and money)
 - attack. (Attack enemy with your weapon (base damage = 15); you must choose the enemey (id = number from 1-9))
 - hack. (Deals no damage but has a 40% chance to kill the enemy instantly)
