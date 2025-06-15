@@ -151,7 +151,8 @@ look_around :-
     room(Location, Name, Description),
     write('LOCATION: '), write(Name), nl,
     write(Description), nl,
-    check_enemies(Location).
+    check_enemies(Location),
+    check_special_room(Location).
 
 show_actions :-
     write('ACTIONS:'), nl,
@@ -172,10 +173,19 @@ show_directions([Dir|Rest]) :-
     write(Dir), write(' '),
     show_directions(Rest).
 
+show_combat_actions :-
+    player_location(Location),
+    has_enemies(Location),
+    write('COMBAT: attack, hack'), nl.
+show_combat_actions.
+
+
 process_action(north) :- move(north).
 process_action(south) :- move(south).
 process_action(east) :- move(east).
 process_action(west) :- move(west).
+process_action(attack) :- combat_attack.
+process_action(hack) :- combat_hack.
 process_action(status) :- display_status.
 process_action(quit) :- 
     write('Thanks for playing NEON SHADOW!'), nl,
@@ -216,5 +226,21 @@ check_enemies(Location) :-
     list_enemies(Location),
     !.
 check_enemies(_) :-
-    write('Area secure - no enemies detected.'), nl.
+    write('Area secure - no hostiles detected.'), nl.
 
+
+defeat_enemy(Location, EnemyId, EnemyType) :-
+    enemy_type(EnemyType, EnemyName, _, _, Reward),
+    retract(room_enemy(Location, EnemyId, EnemyType, _)),
+    player_money(CurrentMoney),
+    NewMoney is CurrentMoney + Reward,
+    retract(player_money(CurrentMoney)),
+    asserta(player_money(NewMoney)),
+    write(EnemyName), write(' ('), write(EnemyId), write(') destroyed! '),
+    write('You earned '), write(Reward), write(' credits.'), nl,
+    
+    % Check if room is now clear
+    (   \+ has_enemies(Location) ->
+        write('Area secured!'), nl
+    ;   true
+    ).
