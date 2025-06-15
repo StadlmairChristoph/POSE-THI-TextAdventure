@@ -48,3 +48,29 @@ weapon(neural_disruptor, 'Neural Disruptor', 50, 1200).
 weapon(cyber_katana, 'Cyber Katana', 45, 1000).
 weapon(ion_cannon, 'Ion Cannon', 60, 1500).
 
+%(name, protection, cost)
+armor(light_jacket, 'Light Jacket', 5, 0).
+armor(kevlar_vest, 'Kevlar Vest', 15, 600).
+armor(cyber_armor, 'Cyber Armor', 25, 1000).
+armor(stealth_suit, 'Stealth Suit', 20, 1200).
+
+%(name, health, damage, reward)
+enemy(security_drone, 'Security Drone', 30, 12, 100).
+enemy(attack_drone, 'Attack Drone', 50, 20, 150).
+enemy(aegis_9, 'Aegis-9 AI Core', 200, 40, 2000).
+
+%(current_room, direction, connected_room)
+connected(entrance, north, lobby).
+connected(lobby, south, entrance).
+connected(lobby, east, security_hub).
+connected(lobby, west, nova_shop).
+connected(lobby, north, server_room).
+connected(security_hub, west, lobby).
+connected(security_hub, north, ghost_trap).
+connected(nova_shop, east, lobby).
+connected(server_room, south, lobby).
+connected(server_room, north, data_core).
+connected(ghost_trap, south, security_hub).
+connected(ghost_trap, north, data_core).
+connected(data_core, south, server_room).
+
