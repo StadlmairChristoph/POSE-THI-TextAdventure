@@ -9,7 +9,7 @@
 :- dynamic(room_enemy/4).
 
 init_game :-
-    set_seed(12345),
+    set_seed(23456),
     randomize,
     retractall(player_location(_)),
     retractall(player_health(_)),
@@ -42,15 +42,14 @@ spawn_initial_enemies :-
     
     % Server Room: 2 security drones
     asserta(room_enemy(server_room, 5, security_drone, 30)),
-    asserta(room_enemy(server_room, enemy_6, security_drone, 30)),
+	asserta(room_enemy(server_room, 6, security_drone, 30)),
     
     % Ghost Trap: 3 attack drones
     asserta(room_enemy(ghost_trap, 7, attack_drone, 50)),
     asserta(room_enemy(ghost_trap, 8, attack_drone, 50)),
-    asserta(room_enemy(ghost_trap, 9, attack_drone, 50)),
     
     % Data Core: 1 Aegis-9
-    asserta(room_enemy(data_core, 10, aegis_9, 200)).
+    asserta(room_enemy(data_core, 9, aegis_9, 200)).
 
 room(entrance, 'Zenith Corporation - Main Entrance', 
      'Neon lights flicker across the corporate plaza. Security drones patrol overhead.').
@@ -81,8 +80,8 @@ armor(stealth_suit, 'Stealth Suit', 20, 800).
 armor(cyber_armor, 'Cyber Armor', 25, 1000).
 
 %(type, name, max_health, damage, reward)
-enemy_type(security_drone, 'Security Drone', 30, 12, 100).
-enemy_type(attack_drone, 'Attack Drone', 50, 20, 150).
+enemy_type(security_drone, 'Security Drone', 30, 12, 150).
+enemy_type(attack_drone, 'Attack Drone', 40, 25, 200).
 enemy_type(aegis_9, 'Aegis-9 AI Core', 200, 40, 2000).
 
 %(current_room, direction, connected_room)
@@ -115,11 +114,13 @@ start_game :-
     game_loop.
 
 game_loop :-
+	nl,
     game_won(true),
     write('MISSION ACCOMPLISHED!'), nl,
     write('You have shut down Aegis-9 and freed Neo-Tokyo Prime!'), nl,
     !.
 game_loop :-
+	nl,
     player_health(Health),
     Health =< 0,
     write('GAME OVER - You have been eliminated by corporate security.'), nl,
@@ -132,6 +133,7 @@ game_loop :-
     write('> '),
     read(Action),
     process_action(Action),
+	write('--------------------------------------------------------------------'),
     game_loop.
 
 display_status :-
@@ -170,7 +172,9 @@ show_movement_actions :-
 
 show_directions([]).
 show_directions([Dir|Rest]) :-
-    write(Dir), write(' '),
+	player_location(Current),
+	connected(Current, Dir, Next),
+    write(Dir), write(' ('), write(Next), write('), '),
     show_directions(Rest).
 
 show_combat_actions :-
@@ -319,7 +323,7 @@ hack_enemy(Location, TargetId) :-
     enemy_type(EnemyType, EnemyName, _, _, _),
     random_hack_roll(Roll),
     write('Attempting to hack '), write(EnemyName), write(' ('), write(TargetId), write(')...'), nl,
-    (   Roll >= 7 ->
+    (   Roll >= 6 ->
         write('Hack successful! You disable the '), write(EnemyName), write('!'), nl,
         defeat_enemy(Location, TargetId, EnemyType)
     ;   write('Hack failed! (Rolled '), write(Roll), write('/10)'), nl,
@@ -384,8 +388,8 @@ shop_buy_armor :-
     player_location(nova_shop),
     write('NOVA\'S ARMOR INVENTORY:'), nl,
     write('1. Kevlar Vest - 600 credits (15 protection)'), nl,
-    write('2. Cyber Armor - 1000 credits (25 protection)'), nl,
-    write('3. Stealth Suit - 1200 credits (20 protection)'), nl,
+	write('2. Stealth Suit - 800 credits (20 protection)'), nl,
+    write('3. Cyber Armor - 1000 credits (25 protection)'), nl,
     write('Enter armor number (1-3): '),
     read(Choice),
     buy_armor_choice(Choice).
@@ -393,8 +397,8 @@ shop_buy_armor :-
     write('You can only shop at Nova\'s den.'), nl.
 
 buy_armor_choice(1) :- attempt_purchase(kevlar_vest).
-buy_armor_choice(2) :- attempt_purchase(cyber_armor).
-buy_armor_choice(3) :- attempt_purchase(stealth_suit).
+buy_armor_choice(2) :- attempt_purchase(stealth_suit).
+buy_armor_choice(3) :- attempt_purchase(cyber_armor).
 buy_armor_choice(_) :- write('Invalid choice.'), nl.
 
 attempt_purchase(ItemCode) :-
