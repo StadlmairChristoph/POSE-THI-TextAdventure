@@ -182,6 +182,11 @@ show_combat_actions.
 show_special_actions :-
     player_location(nova_shop),
     write('SHOP: buy_weapon, buy_armor'), nl.
+show_special_actions :-
+    player_location(ghost_trap),
+    ghost_saved(false),
+    write('RESCUE: save_ghost'), nl.
+show_special_actions.
 
 process_action(north) :- move(north).
 process_action(south) :- move(south).
@@ -191,6 +196,7 @@ process_action(attack) :- combat_attack.
 process_action(hack) :- combat_hack.
 process_action(buy_weapon) :- shop_buy_weapon.
 process_action(buy_armor) :- shop_buy_armor.
+process_action(save_ghost) :- rescue_ghost.
 process_action(status) :- display_status.
 process_action(quit) :- 
     write('Thanks for playing NEON SHADOW!'), nl,
@@ -241,6 +247,17 @@ list_enemies(Room) :-
 
 check_special_room(nova_shop) :-
     write('Nova grins behind her cybernetic visor: "Need some hardware, choom?"'), nl.
+check_special_room(ghost_trap) :-
+    ghost_saved(false),
+    has_enemies(ghost_trap),
+    write('Ghost is pinned down by attack drones! He needs immediate rescue!'), nl.
+check_special_room(ghost_trap) :-
+    ghost_saved(false),
+    \+ has_enemies(ghost_trap),
+    write('The area is clear. You can rescue Ghost now!'), nl.
+check_special_room(ghost_trap) :-
+    ghost_saved(true),
+    write('This detention block is now empty.'), nl.
 check_special_room(_).
 
 combat_attack :-
@@ -396,6 +413,32 @@ attempt_purchase(ItemCode) :-
     !.
 attempt_purchase(_) :-
     write('Not enough credits for that item.'), nl.
+
+rescue_ghost :-
+    player_location(ghost_trap),
+    ghost_saved(false),
+    \+ has_enemies(ghost_trap),
+    retract(ghost_saved(false)),
+    asserta(ghost_saved(true)),
+    write('You successfully rescue Ghost from the detention cell!'), nl,
+    write('Ghost: "Oni! Perfect timing. I owe you one, choom."'), nl,
+    player_health(CurrentHealth),
+    NewHealth is min(100, CurrentHealth + 30),
+    retract(player_health(CurrentHealth)),
+    asserta(player_health(NewHealth)),
+    write('Ghost treats your wounds. Health restored!'), nl,
+    !.
+rescue_ghost :-
+    player_location(ghost_trap),
+    ghost_saved(true),
+    write('Ghost has already been rescued.'), nl,
+    !.
+rescue_ghost :-
+    player_location(ghost_trap),
+    write('You must defeat all the attack drones first!'), nl,
+    !.
+rescue_ghost :-
+    write('Ghost is not here.'), nl.
 
 
 random_hack_roll(Result) :-
