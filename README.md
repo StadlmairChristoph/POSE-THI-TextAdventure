@@ -31,3 +31,6 @@ Commands:
 - buy_armor. (buy armor from shop (only works in the shop), press anything (x. or y.) to exit)
 - save_ghost. (In the room ghost_trap. ghost is guarded by drones after defeating those drones you can save ghost and ghost restores you to full (100hp) health)
 - shutdown_core. (In the data_core room there is aegis_9, which has to be brought down to at least 150hp and then hacked 3 times in order to be defeated; then there is an action to shutdown the core, to win the game)
+
+---
+###
