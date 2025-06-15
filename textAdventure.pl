@@ -6,6 +6,7 @@
 :- dynamic(ghost_saved/1).
 :- dynamic(room_cleared/1).
 :- dynamic(game_won/1).
+:- dynamic(room_enemy/4).  % room_enemy(RoomId, EnemyId, EnemyType, CurrentHealth)
 
 init_game :-
     set_seed(12345),
@@ -18,14 +19,14 @@ init_game :-
     retractall(ghost_saved(_)),
     retractall(room_cleared(_)),
     retractall(game_won(_)),
+    retractall(room_enemy(_, _, _, _)),
     asserta(player_location(entrance)),
     asserta(player_health(100)),
     asserta(player_money(500)),
     asserta(player_weapon(basic_pistol)),
     asserta(player_armor(light_jacket)),
     asserta(ghost_saved(false)),
-    asserta(game_won(false)).
-
+    asserta(game_won(false)),
 
 
 room(entrance, 'Zenith Corporation - Main Entrance', 
@@ -88,7 +89,27 @@ start_game :-
     write('========================================='), nl, nl,
     display_status,
     look_around,
-    
+    game_loop.
+
+game_loop :-
+    game_won(true),
+    write('MISSION ACCOMPLISHED!'), nl,
+    write('You have shut down Aegis-9 and freed Neo-Tokyo Prime!'), nl,
+    !.
+game_loop :-
+    player_health(Health),
+    Health =< 0,
+    write('GAME OVER - You have been eliminated by corporate security.'), nl,
+    write('Your digital ghost fades into the neon void...'), nl,
+    !.
+game_loop :-
+    nl,
+    write('What do you want to do?'), nl,
+    show_actions,
+    write('> '),
+    read(Action),
+    process_action(Action),
+    game_loop.
 
 display_status :-
     player_health(Health),
@@ -106,5 +127,46 @@ look_around :-
     player_location(Location),
     room(Location, Name, Description),
     write('LOCATION: '), write(Name), nl,
-    write(Description), nl,
-    
+    write(Description), nl.
+
+show_actions :-
+    write('ACTIONS:'), nl,
+    show_movement_actions,
+    show_combat_actions,
+    show_special_actions,
+    write('- status (check your status)'), nl,
+    write('- quit (exit game)'), nl.
+
+show_movement_actions :-
+    player_location(Current),
+    write('MOVE: '),
+    findall(Direction, connected(Current, Direction, _), Directions),
+    show_directions(Directions).
+
+show_directions([]).
+show_directions([Dir|Rest]) :-
+    write(Dir), write(' '),
+    show_directions(Rest).
+
+process_action(north) :- move(north).
+process_action(south) :- move(south).
+process_action(east) :- move(east).
+process_action(west) :- move(west).
+process_action(status) :- display_status.
+process_action(quit) :- 
+    write('Thanks for playing NEON SHADOW!'), nl,
+    halt.
+process_action(_) :-
+    write('Invalid action. Try again.'), nl.
+
+move(Direction) :-
+    player_location(Current),
+    connected(Current, Direction, Destination),
+    retract(player_location(Current)),
+    asserta(player_location(Destination)),
+    write('You move '), write(Direction), write('.'), nl,
+    look_around,
+    !.
+move(_) :-
+    write('You cannot go that way.'), nl.
+
