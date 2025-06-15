@@ -77,8 +77,8 @@ weapon(ion_cannon, 'Ion Cannon', 60, 1500).
 %(name, protection, cost)
 armor(light_jacket, 'Light Jacket', 5, 0).
 armor(kevlar_vest, 'Kevlar Vest', 15, 600).
-armor(cyber_armor, 'Cyber Armor', 25, 1000).
 armor(stealth_suit, 'Stealth Suit', 20, 800).
+armor(cyber_armor, 'Cyber Armor', 25, 1000).
 
 %(type, name, max_health, damage, reward)
 enemy_type(security_drone, 'Security Drone', 30, 12, 100).
@@ -179,6 +179,9 @@ show_combat_actions :-
     write('COMBAT: attack, hack'), nl.
 show_combat_actions.
 
+show_special_actions :-
+    player_location(nova_shop),
+    write('SHOP: buy_weapon, buy_armor'), nl.
 
 process_action(north) :- move(north).
 process_action(south) :- move(south).
@@ -186,6 +189,8 @@ process_action(east) :- move(east).
 process_action(west) :- move(west).
 process_action(attack) :- combat_attack.
 process_action(hack) :- combat_hack.
+process_action(buy_weapon) :- shop_buy_weapon.
+process_action(buy_armor) :- shop_buy_armor.
 process_action(status) :- display_status.
 process_action(quit) :- 
     write('Thanks for playing NEON SHADOW!'), nl,
@@ -234,6 +239,9 @@ list_enemies(Room) :-
             write('- '), write(EnemyName), write(' ('), write(EnemyId), 
             write(', Health: '), write(Health), write(')'), nl)).
 
+check_special_room(nova_shop) :-
+    write('Nova grins behind her cybernetic visor: "Need some hardware, choom?"'), nl.
+check_special_room(_).
 
 combat_attack :-
     player_location(Location),
@@ -328,5 +336,73 @@ defeat_enemy(Location, EnemyId, EnemyType) :-
     ;   true
     ).
 
+shop_buy_weapon :-
+    player_location(nova_shop),
+    write('NOVA\'S WEAPON INVENTORY:'), nl,
+    write('1. Plasma Rifle - 800 credits (35 damage)'), nl,
+    write('2. Neural Disruptor - 1200 credits (50 damage)'), nl,
+    write('3. Cyber Katana - 1000 credits (45 damage)'), nl,
+    write('4. Ion Cannon - 1500 credits (60 damage)'), nl,
+    write('Enter weapon number (1-4): '),
+    read(Choice),
+    buy_weapon_choice(Choice).
+shop_buy_weapon :-
+    write('You can only shop at Nova\'s den.'), nl.
+
+buy_weapon_choice(1) :- attempt_purchase(plasma_rifle).
+buy_weapon_choice(2) :- attempt_purchase(neural_disruptor).
+buy_weapon_choice(3) :- attempt_purchase(cyber_katana).
+buy_weapon_choice(4) :- attempt_purchase(ion_cannon).
+buy_weapon_choice(_) :- write('Invalid choice.'), nl.
+
+shop_buy_armor :-
+    player_location(nova_shop),
+    write('NOVA\'S ARMOR INVENTORY:'), nl,
+    write('1. Kevlar Vest - 600 credits (15 protection)'), nl,
+    write('2. Cyber Armor - 1000 credits (25 protection)'), nl,
+    write('3. Stealth Suit - 1200 credits (20 protection)'), nl,
+    write('Enter armor number (1-3): '),
+    read(Choice),
+    buy_armor_choice(Choice).
+shop_buy_armor :-
+    write('You can only shop at Nova\'s den.'), nl.
+
+buy_armor_choice(1) :- attempt_purchase(kevlar_vest).
+buy_armor_choice(2) :- attempt_purchase(cyber_armor).
+buy_armor_choice(3) :- attempt_purchase(stealth_suit).
+buy_armor_choice(_) :- write('Invalid choice.'), nl.
+
+attempt_purchase(ItemCode) :-
+    weapon(ItemCode, ItemName, _, Cost),
+    player_money(Money),
+    Money >= Cost,
+    retract(player_money(Money)),
+    NewMoney is Money - Cost,
+    asserta(player_money(NewMoney)),
+    retract(player_weapon(_)),
+    asserta(player_weapon(ItemCode)),
+    write('You purchased '), write(ItemName), write('!'), nl,
+    !.
+attempt_purchase(ItemCode) :-
+    armor(ItemCode, ItemName, _, Cost),
+    player_money(Money),
+    Money >= Cost,
+    retract(player_money(Money)),
+    NewMoney is Money - Cost,
+    asserta(player_money(NewMoney)),
+    retract(player_armor(_)),
+    asserta(player_armor(ItemCode)),
+    write('You purchased '), write(ItemName), write('!'), nl,
+    !.
+attempt_purchase(_) :-
+    write('Not enough credits for that item.'), nl.
+
+
 random_hack_roll(Result) :-
     random(1, 11, Result).
+
+main :-
+    write('Welcome to NEON SHADOW: INFILTRATION PROTOCOL'), nl,
+    write('Type "start_game." to begin your mission.'), nl.
+
+:- initialization(main).
